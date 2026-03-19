@@ -1,0 +1,24 @@
+# Credenziali locali
+neo4j_auth.txt
+.env
+.env.local
+
+# Dati runtime Neo4j
+neo4j/data/
+neo4j/logs/
+neo4j/plugins/
+
+# Import locali non destinati al repository
+# Se vuoi versionare file di esempio, salvali altrove o rimuovi questa regola.
+neo4j/import/private/
+
+# File temporanei / sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Log generici
+*.log

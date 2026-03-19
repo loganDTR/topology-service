@@ -1,0 +1,36 @@
+name: neo4j-local
+
+services:
+  neo4j:
+    image: neo4j:2026.02.2
+    container_name: neo4j
+    restart: unless-stopped
+
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
+    volumes:
+      - ./neo4j/data:/data
+      - ./neo4j/logs:/logs
+      - ./neo4j/plugins:/plugins
+      - ./neo4j/import:/import
+
+    environment:
+      NEO4J_AUTH_FILE: /run/secrets/neo4j_auth
+
+      # Facoltative: le default sono piuttosto basse.
+      # Se hai poca RAM, puoi anche togliere queste 3 righe.
+      NEO4J_server_memory_heap_initial__size: 1G
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 1G
+
+      # Utile in caso di OOM
+      NEO4J_server_jvm_additional: -XX:+ExitOnOutOfMemoryError
+
+    secrets:
+      - neo4j_auth
+
+secrets:
+  neo4j_auth:
+    file: ./neo4j_auth.txt
