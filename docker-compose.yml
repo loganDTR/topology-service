@@ -11,10 +11,10 @@ services:
       - "7687:7687"
 
     volumes:
-      - ./neo4j/data:/data
-      - ./neo4j/logs:/logs
-      - ./neo4j/plugins:/plugins
-      - ./neo4j/import:/import
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_plugins:/plugins
+      - ./neo4j/import:/import      # solo import può stare su Windows (read)
 
     environment:
       NEO4J_AUTH_FILE: /run/secrets/neo4j_auth
