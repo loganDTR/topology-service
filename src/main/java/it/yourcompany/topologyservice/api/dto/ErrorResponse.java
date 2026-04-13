@@ -21,6 +21,7 @@ public record ErrorResponse(
         int status,
         String error,
         String message,
+        String path,
         @JsonFormat(shape = JsonFormat.Shape.STRING) Instant timestamp
 ) {}
 

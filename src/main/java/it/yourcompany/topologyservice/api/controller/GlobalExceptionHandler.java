@@ -1,6 +1,7 @@
 package it.yourcompany.topologyservice.api.controller;
 
 import it.yourcompany.topologyservice.api.dto.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +49,12 @@ public class GlobalExceptionHandler {
      * annotated with {@code @Validated}.
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletRequest request) {
         String message = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .collect(Collectors.joining("; "));
-        return build(HttpStatus.BAD_REQUEST, "validation_error", message);
+        return build(HttpStatus.BAD_REQUEST, "validation_error", message, request);
     }
 
     /**
@@ -61,23 +63,25 @@ public class GlobalExceptionHandler {
      * path for handler methods annotated with {@code @Validated}).
      */
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(
+            HandlerMethodValidationException ex, HttpServletRequest request) {
         String message = ex.getParameterValidationResults().stream()
                 .flatMap(r -> r.getResolvableErrors().stream())
                 .map(MessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.joining("; "));
-        return build(HttpStatus.BAD_REQUEST, "validation_error", message);
+        return build(HttpStatus.BAD_REQUEST, "validation_error", message, request);
     }
 
     /**
      * Handles {@code @Valid} failures on {@code @RequestBody} parameters.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        return build(HttpStatus.BAD_REQUEST, "validation_error", message);
+        return build(HttpStatus.BAD_REQUEST, "validation_error", message, request);
     }
 
     // -------------------------------------------------------------------------
@@ -90,9 +94,10 @@ public class GlobalExceptionHandler {
      * produce a structured 404 without depending on Spring MVC internals.
      */
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ErrorResponse> handleNoSuchElement(NoSuchElementException ex) {
+    public ResponseEntity<ErrorResponse> handleNoSuchElement(
+            NoSuchElementException ex, HttpServletRequest request) {
         String message = ex.getMessage() != null ? ex.getMessage() : "The requested resource was not found";
-        return build(HttpStatus.NOT_FOUND, "not_found", message);
+        return build(HttpStatus.NOT_FOUND, "not_found", message, request);
     }
 
     // -------------------------------------------------------------------------
@@ -105,10 +110,11 @@ public class GlobalExceptionHandler {
      * Logged at WARN to avoid alert noise for transient outages.
      */
     @ExceptionHandler(DataAccessResourceFailureException.class)
-    public ResponseEntity<ErrorResponse> handleDataAccessResourceFailure(DataAccessResourceFailureException ex) {
+    public ResponseEntity<ErrorResponse> handleDataAccessResourceFailure(
+            DataAccessResourceFailureException ex, HttpServletRequest request) {
         log.warn("Data access resource failure: {}", ex.getMessage());
         return build(HttpStatus.SERVICE_UNAVAILABLE, "service_unavailable",
-                "A backend data source is temporarily unavailable. Retry later.");
+                "A backend data source is temporarily unavailable. Retry later.", request);
     }
 
     // -------------------------------------------------------------------------
@@ -122,20 +128,21 @@ public class GlobalExceptionHandler {
      * implementation information to callers.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "internal_error",
-                "An unexpected error occurred. Check service logs for details.");
+                "An unexpected error occurred. Check service logs for details.", request);
     }
 
     // -------------------------------------------------------------------------
     // Shared builder
     // -------------------------------------------------------------------------
 
-    private ResponseEntity<ErrorResponse> build(HttpStatus status, String error, String message) {
-        return ResponseEntity
-                .status(status)
-                .body(new ErrorResponse(status.value(), error, message, Instant.now()));
+    private ResponseEntity<ErrorResponse> build(
+            HttpStatus status, String error, String message, HttpServletRequest request) {
+        return ResponseEntity.status(status).body(
+                new ErrorResponse(status.value(), error, message,
+                        request.getRequestURI(), Instant.now()));
     }
 }
 
