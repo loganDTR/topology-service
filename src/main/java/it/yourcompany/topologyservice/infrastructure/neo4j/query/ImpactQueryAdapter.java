@@ -33,11 +33,13 @@ public class ImpactQueryAdapter implements AssetImpactPort {
             WITH a, deployed, collect(DISTINCT s2) AS directUses
 
             // Path 3: services that use a Database which is hosted on this asset
-            //         covers VMs, Subnets, and other infrastructure assets
             OPTIONAL MATCH (s3:Service)-[:USES]->(:Database)-[:HOSTED_ON]->(a)
-            WITH a, deployed + directUses + collect(DISTINCT s3) AS combined
+            WITH a, deployed, directUses, collect(DISTINCT s3) AS hostedUses
 
-            // Merge and deduplicate across all three paths
+            // Pure list concatenation — no aggregation in this step
+            WITH a, deployed + directUses + hostedUses AS combined
+
+            // Deduplicate across all three paths
             UNWIND CASE WHEN size(combined) > 0 THEN combined ELSE [null] END AS svc
             WITH a, collect(DISTINCT svc) AS allServices
             WITH a, [s IN allServices WHERE s IS NOT NULL] AS serviceNodes
